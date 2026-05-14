@@ -700,6 +700,9 @@
     getFirestore, collection, addDoc, deleteDoc,
     doc, onSnapshot, query, orderBy, setDoc, getDoc, updateDoc
   } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+  import {
+    getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
 
   const firebaseConfig = {
   apiKey: "AIzaSyB_5_bVWpTw8Tq_TNu5Jelq0I97W-SG6mQ",
@@ -713,6 +716,43 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
+
+  // ── Auth: escuchar cambios de sesión ──────────────────────────────────────
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app-container').style.display = 'block';
+      suscribirMes();
+    } else {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('app-container').style.display = 'none';
+    }
+  });
+
+  window.iniciarSesion = async function() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    const errorEl = document.getElementById('login-error');
+    errorEl.textContent = '';
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      // onAuthStateChanged se encarga de mostrar la app
+    } catch(e) {
+      const mensajes = {
+        'auth/invalid-email': 'Correo electrónico no válido.',
+        'auth/user-not-found': 'No existe una cuenta con ese correo.',
+        'auth/wrong-password': 'Contraseña incorrecta.',
+        'auth/invalid-credential': 'Correo o contraseña incorrectos.',
+        'auth/too-many-requests': 'Demasiados intentos. Espera un momento.',
+      };
+      errorEl.textContent = mensajes[e.code] || 'Error: ' + e.message;
+    }
+  };
+
+  window.cerrarSesion = async function() {
+    if (unsubscribe) unsubscribe();
+    await signOut(auth);
+  };
 
   let movimientos = [];
   let filtroLista = 'todos';
